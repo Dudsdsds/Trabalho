@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AquaTec DF — Monitoramento Hídrico do Distrito Federal</title>
+  <meta name="description" content="Monitore o sistema hídrico da sua região no DF, faça denúncias e acompanhe seu consumo em tempo real." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --off: #F4F6F8;
+      --graph: #1a2a3a;
+      --mid: #5a7a8a;
+      --sub: #9ab0bc;
+      --line: #d0dde3;
+      --acc: #378ADD;
+      --acc-d: #0C447C;
+      --acc-l: #E6F1FB;
+      --white: #ffffff;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --serif: 'DM Serif Display', Georgia, serif;
+      --radius: 12px;
+      --shadow: 0 2px 16px rgba(26,42,58,0.07);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--off);
+      font-family: var(--sans);
+      color: var(--graph);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 3rem;
+      background: rgba(244,246,248,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 0.5px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      transition: box-shadow 0.2s;
+    }
+    nav.scrolled { box-shadow: 0 2px 20px rgba(26,42,58,0.08); }
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 17px;
+      color: var(--graph);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--mid);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--graph); }
+    .nav-cta {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--acc);
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { background: var(--acc-d); transform: translateY(-1px); }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+      border: none;
+      background: none;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: var(--graph);
+      transition: all 0.3s;
+    }
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(244,246,248,0.98);
+      z-index: 300;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-size: 20px;
+      font-family: var(--serif);
+      color: var(--graph);
+      text-decoration: none;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeUp 0.4s forwards;
+    }
+    .mobile-menu a:nth-child(1) { animation-delay: 0.05s; }
+    .mobile-menu a:nth-child(2) { animation-delay: 0.1s; }
+    .mobile-menu a:nth-child(3) { animation-delay: 0.15s; }
+    .mobile-menu a:nth-child(4) { animation-delay: 0.2s; }
+    .mobile-menu a:nth-child(5) { animation-delay: 0.25s; }
+    .mobile-close {
+      position: absolute; top: 1.5rem; right: 2rem;
+      font-size: 24px; cursor: pointer; background: none; border: none; color: var(--graph);
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 7rem 3rem 6rem;
+      text-align: center;
+      border-bottom: 0.5px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(ellipse, rgba(55,138,221,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--acc-d);
+      background: var(--acc-l);
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s 0.1s both;
+    }
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(36px, 5.5vw, 60px);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--graph);
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+      animation: fadeUp 0.6s 0.2s both;
+    }
+    .hero h1 em { font-style: italic; color: var(--acc); }
+    .hero-sub {
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--mid);
+      max-width: 460px;
+      margin: 0 auto 3rem;
+      line-height: 1.75;
+      animation: fadeUp 0.6s 0.3s both;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s 0.4s both;
+    }
+    .btn-primary {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--acc);
+      border: none;
+      padding: 12px 28px;
+      border-radius: 7px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(55,138,221,0.25);
+    }
+    .btn-primary:hover {
+      background: var(--acc-d);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(55,138,221,0.35);
+    }
+    .btn-ghost {
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--mid);
+      background: none;
+      border: none;
+      padding: 12px 4px;
+      cursor: pointer;
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--graph); border-color: var(--graph); }
+
+    /* ── SECTIONS ── */
+    .section { padding: 5.5rem 3rem; }
+    .section-inner { max-width: 980px; margin: 0 auto; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 3.5rem; }
+    .eyebrow-line { width: 28px; height: 0.5px; background: var(--acc); }
+    .eyebrow span { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); }
+    .section-h { font-family: var(--serif); font-size: clamp(24px,3.5vw,38px); font-weight: 400; line-height: 1.2; letter-spacing: -0.02em; color: var(--graph); margin-bottom: 1rem; }
+    .section-p { font-size: 15px; font-weight: 300; color: var(--mid); max-width: 440px; line-height: 1.75; margin-bottom: 3.5rem; }
+
+    /* ── FEAT GRID ── */
+    .feat-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1px; background: var(--line); border: 0.5px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .feat-card { background: var(--off); padding: 2rem 1.75rem; transition: background 0.2s; }
+    .feat-card:hover { background: var(--white); }
+    .feat-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--acc-l); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem; }
+    .feat-icon svg { width: 16px; height: 16px; stroke: var(--acc-d); fill: none; stroke-width: 1.5; }
+    .feat-card h3 { font-size: 14px; font-weight: 500; color: var(--graph); margin-bottom: 0.5rem; }
+    .feat-card p { font-size: 13px; font-weight: 300; color: var(--mid); line-height: 1.7; }
+
+    /* ── TWO-COL ── */
+    .alt-section { background: var(--white); border-top: 0.5px solid var(--line); border-bottom: 0.5px solid var(--line); padding: 5.5rem 3rem; }
+    .two-col { display: grid; grid-template-columns: 1fr 1.8fr; gap: 4rem; align-items: start; }
+    .aside-title { font-family: var(--serif); font-size: 26px; font-weight: 400; line-height: 1.25; letter-spacing: -0.02em; color: var(--graph); margin-bottom: 0.75rem; }
+    .aside-sub { font-size: 13px; font-weight: 300; color: var(--mid); line-height: 1.7; }
+    .blocks { display: flex; flex-direction: column; gap: 2rem; }
+    .block { padding-left: 1.25rem; border-left: 1.5px solid var(--line); transition: border-color 0.2s; }
+    .block:hover { border-color: var(--acc); }
+    .block h4 { font-size: 14px; font-weight: 500; color: var(--graph); margin-bottom: 0.4rem; }
+    .block p { font-size: 13px; font-weight: 300; color: var(--mid); line-height: 1.7; }
+
+    /* ── ALERTS ── */
+    .alert-cards { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; margin-top: 3.5rem; }
+    .alert-card { border: 0.5px solid var(--line); border-radius: 12px; padding: 1.5rem; background: var(--white); transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; cursor: default; }
+    .alert-card:hover { border-color: var(--acc); box-shadow: var(--shadow); transform: translateY(-2px); }
+    .alert-tag { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 1rem; }
+    .tag-warn { color: #854F0B; background: #FAEEDA; }
+    .tag-info { color: #185FA5; background: #E6F1FB; }
+    .tag-danger { color: #A32D2D; background: #FCEBEB; }
+    .tag-ok { color: #085041; background: #E1F5EE; }
+    .alert-card h4 { font-size: 14px; font-weight: 500; color: var(--graph); margin-bottom: 0.4rem; }
+    .alert-card p { font-size: 13px; font-weight: 300; color: var(--mid); line-height: 1.65; }
+
+    /* ── STATS ── */
+    .stats-strip { padding: 4rem 3rem; border-top: 0.5px solid var(--line); border-bottom: 0.5px solid var(--line); background: var(--white); }
+    .stats-inner { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); }
+    .stat { text-align: center; padding: 2rem 1rem; border-right: 0.5px solid var(--line); }
+    .stat:last-child { border-right: none; }
+    .stat-n { font-family: var(--serif); font-size: 38px; font-weight: 400; color: var(--graph); letter-spacing: -0.04em; line-height: 1; margin-bottom: 0.5rem; }
+    .stat-l { font-size: 11px; font-weight: 400; color: var(--mid); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* ── DENÚNCIA (modal) ── */
+    .denuncia-section { padding: 5.5rem 3rem; background: var(--off); border-bottom: 0.5px solid var(--line); }
+    .denuncia-card { background: var(--white); border: 0.5px solid var(--line); border-radius: 16px; padding: 3rem; max-width: 640px; }
+    .denuncia-card form { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 2rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-group label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mid); }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--graph);
+      background: var(--off);
+      border: 0.5px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: vertical;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(55,138,221,0.1);
+    }
+    .form-group textarea { min-height: 90px; }
+    .form-submit { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .toast {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #085041;
+      background: #E1F5EE;
+      border-radius: 8px;
+      padding: 8px 14px;
+    }
+    .toast.show { display: flex; }
+
+    /* ── CONTACT ── */
+    .contact-section { padding: 5.5rem 3rem; background: var(--off); }
+    .contact-inner { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .contact-item { border: 0.5px solid var(--line); border-radius: 10px; padding: 1.25rem; background: var(--white); transition: border-color 0.2s; }
+    .contact-item:hover { border-color: var(--acc); }
+    .contact-item-label { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); margin-bottom: 0.4rem; }
+    .contact-item-val { font-size: 13px; font-weight: 400; color: var(--graph); }
+    .contact-item-val a { color: var(--acc); text-decoration: none; }
+    .contact-item-val a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2rem 3rem;
+      border-top: 0.5px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: var(--white);
+    }
+    .footer-copy { font-size: 12px; color: var(--sub); font-weight: 300; }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-link { font-size: 12px; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+    .footer-link:hover { color: var(--graph); }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+      .hero { padding: 5rem 1.5rem 4rem; }
+      .section, .alt-section, .denuncia-section, .contact-section { padding: 4rem 1.5rem; }
+      .feat-grid { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; gap: 2.5rem; }
+      .alert-cards { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: repeat(2,1fr); }
+      .stat { border-right: none; border-bottom: 0.5px solid var(--line); }
+      .stat:nth-child(odd) { border-right: 0.5px solid var(--line); }
+      .contact-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true" aria-label="Menu de navegação">
+  <button class="mobile-close" onclick="closeMobile()" aria-label="Fechar menu">✕</button>
+  <a href="#sobre" onclick="closeMobile()">Sobre</a>
+  <a href="#funcionalidades" onclick="closeMobile()">Funcionalidades</a>
+  <a href="#alertas" onclick="closeMobile()">Alertas</a>
+  <a href="#denuncia" onclick="closeMobile()">Denúncia</a>
+  <a href="#contacto" onclick="closeMobile()">Contacto</a>
+</div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="nav-logo" href="#"><span class="logo-dot"></span>AquaTec DF</a>
+  <ul class="nav-links" role="list">
+    <li><a href="#sobre">Sobre</a></li>
+    <li><a href="#funcionalidades">Funcionalidades</a></li>
+    <li><a href="#alertas">Alertas</a></li>
+    <li><a href="#denuncia">Denúncia</a></li>
+    <li><a href="#contacto">Contacto</a></li>
+  </ul>
+  <a class="nav-cta" href="#denuncia">Fazer Denúncia</a>
+  <button class="hamburger" onclick="openMobile()" aria-label="Abrir menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="sobre">
+  <div class="hero-badge">App de monitoramento — Brasília, DF</div>
+  <h1>Água limpa e <em>acessível</em><br>para todas as RAs do DF.</h1>
+  <p class="hero-sub">Monitore o sistema hídrico da sua região, faça denúncias e acompanhe seu consumo em tempo real — tudo num só lugar.</p>
+  <div class="hero-ctas">
+    <a class="btn-primary" href="#denuncia">Fazer uma Denúncia</a>
+    <a class="btn-ghost" href="#funcionalidades">Saiba mais ↓</a>
+  </div>
+</section>
+
+<!-- PROBLEMA -->
+<section class="section" id="funcionalidades">
+  <div class="section-inner">
+    <div class="eyebrow reveal"><div class="eyebrow-line"></div><span>O problema</span></div>
+    <h2 class="section-h reveal">Muitas regiões sofrem com<br>problemas hídricos sem solução.</h2>
+    <p class="section-p reveal">Falta de água, contaminações, vazamentos não identificados e ausência de comunicação entre a população e o poder público.</p>
+
+    <div class="feat-grid reveal">
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z"/></svg>
+        </div>
+        <h3>Falta de água</h3>
+        <p>Interrupções frequentes no abastecimento sem aviso prévio afetam moradores de diversas RAs do Distrito Federal, prejudicando o dia a dia de famílias e comércios.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3>Contaminações</h3>
+        <p>Casos de contaminação da água não são comunicados com rapidez, colocando em risco a saúde de famílias inteiras — especialmente crianças e idosos.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3>Vazamentos ocultos</h3>
+        <p>Perdas significativas de água por vazamentos não identificados impactam o desperdício hídrico e elevam desnecessariamente as contas dos moradores.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCIONALIDADES -->
+<section class="alt-section">
+  <div class="section-inner">
+    <div class="eyebrow reveal"><div class="eyebrow-line"></div><span>Funcionalidades</span></div>
+    <div class="two-col">
+      <div class="reveal">
+        <h2 class="aside-title">Como o AquaTec DF resolve isso</h2>
+        <p class="aside-sub">Uma plataforma que conecta cidadãos, dados e governo para agir com mais rapidez e transparência no Distrito Federal.</p>
+      </div>
+      <div class="blocks reveal">
+        <div class="block">
+          <h4>Dashboard de consumo em tempo real</h4>
+          <p>Acompanhe seus gastos de água com comparativos mensais e anuais, metas de economia e indicadores de variação — como +6,70% ou −34,21% em relação ao mês anterior.</p>
+        </div>
+        <div class="block">
+          <h4>Denúncias diretas pelo app</h4>
+          <p>Reporte vazamentos, contaminações ou interrupções em poucos cliques. As ocorrências são registradas e encaminhadas à CAESB e aos órgãos responsáveis com localização e histórico.</p>
+        </div>
+        <div class="block">
+          <h4>Monitoramento por região</h4>
+          <p>Visualize o status hídrico da sua RA com dados atualizados: pressão da rede, qualidade da água e registros de manutenção programada nas 33 regiões administrativas.</p>
+        </div>
+        <div class="block">
+          <h4>Histórico e relatórios exportáveis</h4>
+          <p>Acesse o histórico completo do consumo da sua residência e da sua região, com relatórios exportáveis em PDF e análise comparativa de períodos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ALERTAS -->
+<section class="section" id="alertas">
+  <div class="section-inner">
+    <div class="eyebrow reveal"><div class="eyebrow-line"></div><span>Sistema de alertas</span></div>
+    <h2 class="section-h reveal">Seja o primeiro a saber<br>quando algo muda na sua região.</h2>
+    <p class="section-p reveal">Notificações push em tempo real para situações críticas, manutenções programadas e avisos de qualidade da água nas RAs do DF.</p>
+
+    <div class="alert-cards reveal">
+      <div class="alert-card">
+        <span class="alert-tag tag-danger">Contaminação</span>
+        <h4>Alerta de qualidade da água</h4>
+        <p>Notificação imediata quando parâmetros de qualidade saem do padrão aceitável na sua RA, com orientações de segurança e instruções da Vigilância Sanitária.</p>
+      </div>
+      <div class="alert-card">
+        <span class="alert-tag tag-warn">Manutenção</span>
+        <h4>Aviso de interrupção programada</h4>
+        <p>Informe-se com antecedência sobre cortes planejados para manutenção da rede, com horário de início, previsão de retorno e bairros afetados.</p>
+      </div>
+      <div class="alert-card">
+        <span class="alert-tag tag-info">Abastecimento</span>
+        <h4>Monitoramento de falta d'água</h4>
+        <p>Acompanhe em tempo real as regiões com abastecimento interrompido e receba aviso automático quando o serviço for normalizado na sua área.</p>
+      </div>
+      <div class="alert-card">
+        <span class="alert-tag tag-ok">Vazamento</span>
+        <h4>Identificação de vazamentos</h4>
+        <p>Detecte vazamentos ocultos com base no padrão de consumo e relate ocorrências visíveis com foto e geolocalização diretamente para a CAESB.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stats-inner reveal">
+    <div class="stat">
+      <div class="stat-n" data-target="33">0</div>
+      <div class="stat-l">Regiões Administrativas</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" data-target="4">0</div>
+      <div class="stat-l">Tipos de alerta</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">24h</div>
+      <div class="stat-l">Monitoramento contínuo</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n" data-target="1">0</div>
+      <div class="stat-l">App para tudo</div>
+    </div>
+  </div>
+</div>
+
+<!-- DENÚNCIA -->
+<section class="denuncia-section" id="denuncia">
+  <div class="section-inner">
+    <div class="eyebrow reveal"><div class="eyebrow-line"></div><span>Denúncia</span></div>
+    <h2 class="section-h reveal">Registre uma ocorrência<br>na sua região.</h2>
+    <p class="section-p reveal">Preencha o formulário abaixo. Sua denúncia será encaminhada à CAESB e órgãos competentes do Distrito Federal.</p>
+
+    <div class="denuncia-card reveal">
+      <form id="denunciaForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required />
+          </div>
+          <div class="form-group">
+            <label for="telefone">Telefone</label>
+            <input type="tel" id="telefone" name="telefone" placeholder="(61) 9XXXX-XXXX" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ra">Região Administrativa</label>
+            <select id="ra" name="ra" required>
+              <option value="" disabled selected>Selecione sua RA</option>
+              <option>Plano Piloto</option>
+              <option>Gama</option>
+              <option>Taguatinga</option>
+              <option>Brazlândia</option>
+              <option>Sobradinho</option>
+              <option>Planaltina</option>
+              <option>Paranoá</option>
+              <option>Núcleo Bandeirante</option>
+              <option>Ceilândia</option>
+              <option>Guará</option>
+              <option>Cruzeiro</option>
+              <option>Samambaia</option>
+              <option>Santa Maria</option>
+              <option>São Sebastião</option>
+              <option>Recanto das Emas</option>
+              <option>Lago Sul</option>
+              <option>Riacho Fundo</option>
+              <option>Lago Norte</option>
+              <option>Candangolândia</option>
+              <option>Águas Claras</option>
+              <option>Riacho Fundo II</option>
+              <option>Sudoeste/Octogonal</option>
+              <option>Varjão</option>
+              <option>Park Way</option>
+              <option>SCIA/Estrutural</option>
+              <option>Sobradinho II</option>
+              <option>Jardim Botânico</option>
+              <option>Itapoã</option>
+              <option>SIA</option>
+              <option>Vicente Pires</option>
+              <option>Fercal</option>
+              <option>Sol Nascente/Pôr do Sol</option>
+              <option>Arniqueira</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tipo">Tipo de ocorrência</label>
+            <select id="tipo" name="tipo" required>
+              <option value="" disabled selected>Selecione o tipo</option>
+              <option>Falta d'água</option>
+              <option>Contaminação / água com odor</option>
+              <option>Vazamento na rua</option>
+              <option>Vazamento em poste / rede</option>
+              <option>Pressão baixa</option>
+              <option>Água turva / colorida</option>
+              <option>Outro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="endereco">Endereço ou ponto de referência</label>
+          <input type="text" id="endereco" name="endereco" placeholder="Ex: SQN 206, bloco A, próximo à quadra esportiva" required />
+        </div>
+        <div class="form-group">
+          <label for="descricao">Descrição da ocorrência</label>
+          <textarea id="descricao" name="descricao" placeholder="Descreva o problema com o máximo de detalhes possível..." required></textarea>
+        </div>
+        <div class="form-submit">
+          <button type="submit" class="btn-primary">Enviar denúncia →</button>
+          <div class="toast" id="toast" role="alert" aria-live="polite">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Ocorrência registrada com sucesso!
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section class="contact-section" id="contacto">
+  <div class="contact-inner">
+    <div class="reveal">
+      <div class="eyebrow"><div class="eyebrow-line"></div><span>Contacto</span></div>
+      <h2 class="aside-title">Fale com<br>a AquaTec DF</h2>
+      <p class="aside-sub" style="margin-top:0.75rem;">Estamos em Brasília e prontos para atender moradores, parceiros e órgãos públicos do Distrito Federal.</p>
+    </div>
+    <div class="contact-grid reveal">
+      <div class="contact-item">
+        <div class="contact-item-label">Telefone</div>
+        <div class="contact-item-val"><a href="tel:+556195238345">(61) 9523-8345</a></div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-item-label">E-mail</div>
+        <div class="contact-item-val"><a href="mailto:aquatec@gmail.com">aquatec@gmail.com</a></div>
+      </div>
+      <div class="contact-item" style="grid-column:1/-1;">
+        <div class="contact-item-label">Endereço</div>
+        <div class="contact-item-val">SQN 706 — Brasília, DF, 70760-706</div>
+      </div>
+      <div class="contact-item" style="grid-column:1/-1;">
+        <div class="contact-item-label">Site</div>
+        <div class="contact-item-val"><a href="https://www.aquatecdf.com.br" target="_blank" rel="noopener">www.aquatecdf.com.br</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-copy">© 2026 AquaTec DF. Todos os direitos reservados.</span>
+  <div class="footer-links">
+    <a class="footer-link" href="#sobre">Sobre</a>
+    <a class="footer-link" href="#alertas">Alertas</a>
+    <a class="footer-link" href="#denuncia">Denúncia</a>
+    <a class="footer-link" href="#contacto">Contacto</a>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll nav shadow
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // ── Mobile menu
+  function openMobile() {
+    document.getElementById('mobileMenu').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMobile() {
+    document.getElementById('mobileMenu').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ── Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  revealEls.forEach(el => observer.observe(el));
+
+  // ── Counter animation
+  function animateCounter(el, target) {
+    const dur = 1200;
+    const start = performance.now();
+    function step(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(ease * target);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const target = parseInt(e.target.dataset.target);
+        if (!isNaN(target)) animateCounter(e.target, target);
+        statsObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.stat-n[data-target]').forEach(el => statsObserver.observe(el));
+
+  // ── Denúncia form
+  document.getElementById('denunciaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const nome = document.getElementById('nome').value.trim();
+    const ra   = document.getElementById('ra').value;
+    const tipo = document.getElementById('tipo').value;
+    const end  = document.getElementById('endereco').value.trim();
+    const desc = document.getElementById('descricao').value.trim();
+
+    if (!nome || !ra || !tipo || !end || !desc) {
+      // Simple shake on invalid
+      this.querySelectorAll('input:invalid, select:invalid, textarea:invalid').forEach(el => {
+        el.style.borderColor = '#A32D2D';
+        el.style.boxShadow = '0 0 0 3px rgba(163,45,45,0.1)';
+        setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
+      });
+      return;
+    }
+
+    const btn = this.querySelector('.btn-primary');
+    btn.textContent = 'Enviando…';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      this.reset();
+      btn.textContent = 'Enviar denúncia →';
+      btn.disabled = false;
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }, 1200);
+  });
+</script>
+</body>
+</html>
